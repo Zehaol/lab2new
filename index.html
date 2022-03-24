@@ -1,0 +1,217 @@
+<!DOCTYPE html><html><head>
+    <title>Washroom Locator in Vancouver</title>
+    <meta charset="utf-8">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css">
+
+   <script src="turf.min.js"></script>
+
+    <script src="leaflet.js"></script>
+
+    <script src="jquery-3.3.1.min.js"></script>
+<link rel="stylesheet" type="text/css" href="style.css">
+    <script src="./p5.min.js"></script>
+  </head>
+
+  <body>
+    <div id="mapid" style="width: 600px; height: 400px;"></div>
+    <!-- Our web map will get placed into this div element -->
+
+    <div id="controls" style="margin: 15px;">
+      <button id="showAllWCsButton">Show All Address</button>
+
+      <span style="display:inline-block; width: 30px"></span>
+      <input type="text" id="highlightWCsTextEntry" placeholder="Address Name">
+      <input type="number" id="laTextEntry" placeholder="longitude">
+
+      <input type="number" id="loTextEntry" placeholder="latitude">
+      
+      <input type="number" id="diTextEntry" placeholder="capability">
+
+
+      <button id="drawpointButton">Draw Point</button>
+      <button id="highlightWCsButton">Highlight</button>
+      <button id="findButton">Find</button>
+      <button id="clearButton">Clear All Selected</button>
+    </div>
+
+    <script>
+                      // Make a Leaflet map with L.map().
+                      // Store the map in the variable 'map'.
+                      // "mapid" is the 'id' of the DOM element to contain the map.
+                      var map = L.map('mapid', {
+                          center: [49.265637, -123.13],
+                          zoom: 10
+                        } // this object holds map options
+                      );
+
+                      var topoTiles = L.tileLayer(
+                        "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
+
+                      ).addTo(map);
+
+                      var WCMarkerOptions = {
+                        radius: 8,
+                        fillColor: "#00ff00",
+                        color: "#001",
+                        weight: 1,
+                        opacity: 0.2,
+                        fillOpacity: 0.5
+                      };
+                  var WCMarkerHighlightedOptions = {
+                         radius: 10,
+                        fillColor: "#ff0000",
+                        color: "#000",
+                        weight: 1,
+                        opacity: 0.5,
+                        fillOpacity: 0.5
+                      };
+                      function onEachWC(feature, layer) {
+                        
+                        if (feature.properties && feature.properties.name) {
+                          layer.bindTooltip(feature.properties.name);
+                        }
+                      }
+
+                      function WCPointToLayer(feature, latlng) {
+                         if (taxaToHighlight === ""){
+                           WCMarkerOptionsToUse = WCMarkerOptions;
+                         } else {WCMarkerOptionsToUse = WCMarkerHighlightedOptions;}
+
+                        return L.circleMarker(
+                          latlng,
+                          WCMarkerOptionsToUse
+                        )
+                      }
+
+                      function WCsToFilter(feature, layer) {
+                        if (taxaToHighlight === "") {
+                          return true;
+                          
+                        } else if (feature.properties && feature.properties.name) {
+                          
+                          return feature.properties.name.toLowerCase().includes(taxaToHighlight.toLowerCase());
+                          
+                        } else {
+                          return false;
+                          
+                        }
+                      }
+
+                      var lastLayerAdded = {};
+
+                      function addWCs() {
+                        if (map.hasLayer(lastLayerAdded)) {
+                          map.removeLayer(lastLayerAdded);
+                        }
+                        lastLayerAdded = L.geoJSON(WCGeoJSONdata, {
+                          pointToLayer: WCPointToLayer,
+                          onEachFeature: onEachWC,
+                          filter: WCsToFilter
+                        });
+                        lastLayerAdded.addTo(map);
+                      };
+
+                      var taxaToHighlight = "";
+                      
+                      function highlightWCs() {
+                        taxaToHighlight = document
+                          .getElementById("highlightWCsTextEntry")
+                          .value;
+                        addWCs();
+                        taxaToHighlight = ""; 
+                      }
+
+                  //function drawpoint(){
+                  //  turf.point([
+                     //document
+            //.getElementById("laTextEntry")
+                      //    .value,
+                      //   document
+                        //  .getElementById("loTextEntry")
+                         // .value,
+                   // ]);//
+      
+   //   var lati= laTextEntry.value
+    //  var long= loTextEntry.value
+//var point =turf.point([lati, long]);
+ function point() {
+                        if (map.hasLayer(lastLayerAdded)) {
+                          map.removeLayer(lastLayerAdded);
+                        }
+   var lati= laTextEntry.value
+   var long= loTextEntry.value
+   var pointt=turf.point([lati, long])
+                        lastLayerAdded = L.geoJSON(pointt
+                        );
+                        lastLayerAdded.addTo(map);
+                      };
+
+      
+ function findd() {
+                        if (map.hasLayer(lastLayerAdded)) {
+                          map.removeLayer(lastLayerAdded);
+                        }
+ // var lati= laTextEntry.value
+  //var long= loTextEntry.value
+  // var capa= diTextEntry.value
+   var lati = -123.13
+   var long = 49.265
+   var capa = 2000
+   var pointt=turf.point([lati, long])
+   var buffered = turf.buffer(pointt, capa , {units: 'meters'});
+   var wcwithin = turf.pointsWithinPolygon (WCGeoJSONdata, buffered)
+                        lastLayerAdded = L.geoJSON( wcwithin
+                        );
+                        lastLayerAdded.addTo(map);
+   
+   
+   
+   
+                      };
+      
+
+      
+                      var WCGeoJSONdata;
+
+
+                  function clearall(){
+                     map.removeLayer(lastLayerAdded)
+
+
+
+                  }
+
+
+                      $.getJSON("https://raw.githubusercontent.com/Zehaol/public_washroom/gh-pages/public-washrooms.geojson",
+                        function(data) {
+                          // Store data for later:
+                          WCGeoJSONdata = data;
+                          // Create event listener for ShowAllWCs Button:
+                          document
+                            .getElementById("showAllWCsButton")
+                            .addEventListener("click", addWCs);
+
+
+                          document
+                            .getElementById("drawpointButton")
+                            .addEventListener("click", point);
+
+                          document
+                            .getElementById("highlightWCsButton")
+                            .addEventListener("click", highlightWCs);
+
+                          document
+                            .getElementById("clearButton")
+                            .addEventListener("click", clearall);
+  document
+                            .getElementById("findButton")
+                            .addEventListener("click", findd);
+
+
+                        }
+                      );
+    </script>
+  
+
+</body></html>
